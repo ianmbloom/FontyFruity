@@ -19,14 +19,15 @@ import Data.Binary.Get( Get, getWord16be, getWord32be )
 import Data.Binary.Put( putWord16be, putWord32be )
 import qualified Data.Vector as V
 
+
 import Graphics.Text.TrueType.Types
 
 -- | Describe the "hhea" TrueType table.
 data HorizontalHeader = HorizontalHeader
     { -- | Distance from baseline of highest ascender
-      _hheaAscent  :: {-# UNPACK #-} !FWord
+      _hheaAscent  :: {-# UNPACK #-} !Int16
       -- | Distance from baseline of lowest descender
-    , _hheaDescent :: {-# UNPACK #-} !FWord
+    , _hheaDescent :: {-# UNPACK #-} !Int16
       -- | typographic line gap
     , _hheaLineGap :: {-# UNPACK #-} !FWord
       -- | must be consistent with horizontal metrics
@@ -37,7 +38,7 @@ data HorizontalHeader = HorizontalHeader
     , _hheaMinRightSideBearing :: {-# UNPACK #-} !FWord
       -- | max(lsb + (xMax-xMin))
     , _hheaXmaxExtent :: {-# UNPACK #-} !FWord
-      -- | used to calculate the slope of the caret 
+      -- | used to calculate the slope of the caret
       -- (rise/run) set to 1 for vertical caret
     , _hheaCaretSlopeRise :: {-# UNPACK #-} !Int16
       -- | 0 for vertical
@@ -116,5 +117,4 @@ getHorizontalMetrics numberOfMetrics glyphCount = do
         HorizontalMetric lastAdvance . fromIntegral <$> getWord16be
     return $ HorizontalMetricsTable $ V.concat [hMetrics, run]
   where
-    sideBearingCount = glyphCount - numberOfMetrics 
-
+    sideBearingCount = glyphCount - numberOfMetrics
