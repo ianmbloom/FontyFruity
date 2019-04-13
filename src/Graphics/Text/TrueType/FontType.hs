@@ -1,9 +1,22 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Graphics.Text.TrueType.FontType
     ( Font( .. )
+    , fontOffsetTable
+    , fontTables
+    , fontNames
+    , fontHeader
+    , fontMaxp
+    , fontMap
+    , fontGlyph
+    , fontLoca
+    , fontHorizontalHeader
+    , fontHorizontalMetrics
     , emptyFont
     ) where
 
 import Control.DeepSeq( NFData( .. ) )
+import Control.Lens
 import Data.Word( Word32 )
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Vector as V
@@ -20,20 +33,20 @@ import Graphics.Text.TrueType.Name
 
 -- | Type representing a font.
 data Font = Font
- { -- | Field discribing various offsets/positions of table
-   -- inside the font file. Not available for reading.
-   _fontOffsetTable       :: !OffsetTable
- , _fontTables            :: ![(B.ByteString, B.ByteString)]
- , _fontNames             :: Maybe NameTable
- , _fontHeader            :: Maybe FontHeader
- , _fontMaxp              :: Maybe MaxpTable
- , _fontMap               :: Maybe CharacterMaps
- , _fontGlyph             :: Maybe (V.Vector Glyph)
- , _fontLoca              :: Maybe (VU.Vector Word32)
- , _fontHorizontalHeader  :: Maybe HorizontalHeader
- , _fontHorizontalMetrics :: Maybe HorizontalMetricsTable
- }
- deriving (Show)
+  { -- | Field discribing various offsets/positions of table
+    -- inside the font file. Not available for reading.
+    _fontOffsetTable       :: !OffsetTable
+  , _fontTables            :: ![(B.ByteString, B.ByteString)]
+  , _fontNames             :: Maybe NameTable
+  , _fontHeader            :: Maybe FontHeader
+  , _fontMaxp              :: Maybe MaxpTable
+  , _fontMap               :: Maybe CharacterMaps
+  , _fontGlyph             :: Maybe (V.Vector Glyph)
+  , _fontLoca              :: Maybe (VU.Vector Word32)
+  , _fontHorizontalHeader  :: Maybe HorizontalHeader
+  , _fontHorizontalMetrics :: Maybe HorizontalMetricsTable
+  } deriving (Show)
+makeLenses ''Font
 
 instance NFData Font where
     rnf font =
@@ -56,4 +69,3 @@ emptyFont table = Font
     , _fontHorizontalHeader  = Nothing
     , _fontHorizontalMetrics = Nothing
     }
-

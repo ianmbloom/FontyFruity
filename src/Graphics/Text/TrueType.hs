@@ -2,6 +2,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 -- | Module in charge of loading fonts.
 module Graphics.Text.TrueType
     ( -- * Functions
@@ -28,8 +29,21 @@ module Graphics.Text.TrueType
 
       -- * Types
     , Font
+    , fontOffsetTable
+    , fontTables
+    , fontNames
+    , fontHeader
+    , fontMaxp
+    , fontMap
+    , fontGlyph
+    , fontLoca
+    , fontHorizontalHeader
+    , fontHorizontalMetrics
     , FontStyle( .. )
     , RawGlyph( .. )
+    , rawGlyphCompositionScale
+    , rawGlyphIndex
+    , rawGlyphContour
     , Dpi
     , PointSize( .. )
     , CompositeScaling( .. )
@@ -42,6 +56,7 @@ import Control.Applicative((<$>))
 #endif
 
 import Control.Monad( foldM, forM )
+import Control.Lens hiding (index, ix, mapping)
 import Data.Function( on )
 import Data.Int ( Int16 )
 import Data.List( sortBy, mapAccumL, foldl' )
@@ -455,9 +470,28 @@ getGlyphIndexCurvesAtPointSizeAndPos
 -- | True if the character is not present in the font, therefore it
 -- will appear as a placeholder in renderings.
 isPlaceholder :: Font -> Char -> Bool
-isPlaceholder Font { _fontMap = Just fontMap } character =
-    findCharGlyph fontMap 0 character == 0
+isPlaceholder Font { _fontMap = Just fm } character =
+    findCharGlyph fm 0 character == 0
 isPlaceholder Font { _fontMap = Nothing } _ = True
+
+prependScale :: CompositeScaling -> RawGlyph -> RawGlyph
+prependScale scale rGlyph =
+    rGlyph { _rawGlyphCompositionScale = scale : _rawGlyphCompositionScale rGlyph }
+
+getCharacterGlyphs :: V.Vector Glyph -> V.Vector HorizontalMetric -> Int
+                   -> V.Vector RawGlyph
+getCharacterGlyphs allGlyphs allMetrics glyphIndex =
+    case _glyphContent (allGlyphs V.! glyphIndex) of
+      GlyphEmpty -> mempty
+      GlyphComposite compositions _ -> V.concatMap expandComposition compositions
+      GlyphSimple countour ->
+          V.singleton . RawGlyph mempty glyphIndex $ extractFlatOutline countour
+  where
+    recurse = getCharacterGlyphs allGlyphs allMetrics
+
+    expandComposition GlyphComposition { _glyphCompositeIndex = index
+                                       , _glyphCompositionScale = scale } =
+      V.map (prependScale scale) . recurse $ fromIntegral index
 
 -- | Retrive the glyph contours and associated transformations.
 -- The coordinate system is assumed to be the TTF one (y upward).
@@ -492,23 +526,4 @@ data RawGlyph = RawGlyph
       -- contour.
     , _rawGlyphContour          :: ![VU.Vector (Int16, Int16)]
     }
-
-prependScale :: CompositeScaling -> RawGlyph -> RawGlyph
-prependScale scale rGlyph =
-    rGlyph { _rawGlyphCompositionScale = scale : _rawGlyphCompositionScale rGlyph }
-
-getCharacterGlyphs :: V.Vector Glyph -> V.Vector HorizontalMetric -> Int
-                   -> V.Vector RawGlyph
-getCharacterGlyphs allGlyphs allMetrics glyphIndex =
-    case _glyphContent (allGlyphs V.! glyphIndex) of
-      GlyphEmpty -> mempty
-      GlyphComposite compositions _ -> V.concatMap expandComposition compositions
-      GlyphSimple countour ->
-          V.singleton . RawGlyph mempty glyphIndex $ extractFlatOutline countour
-  where
-    recurse = getCharacterGlyphs allGlyphs allMetrics 
-
-    expandComposition GlyphComposition { _glyphCompositeIndex = index
-                                       , _glyphCompositionScale = scale } =
-      V.map (prependScale scale) . recurse $ fromIntegral index
-
+makeLenses ''RawGlyph

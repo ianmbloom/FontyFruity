@@ -1,6 +1,19 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Graphics.Text.TrueType.HorizontalInfo
     ( HorizontalHeader( .. )
+    , hheaAscent
+    , hheaDescent
+    , hheaLineGap
+    , hheaAdvanceWidthMax
+    , hheaMinLeftSideBearing
+    , hheaMinRightSideBearing
+    , hheaXmaxExtent
+    , hheaCaretSlopeRise
+    , hheaCaretSlopeRun
+    , hheaCaretOffset
+    , hheaMetricDataFormat
+    , hheaLongHorMetricCount
     , HorizontalMetricsTable( .. )
     , HorizontalMetric( .. )
     , getHorizontalMetrics
@@ -18,7 +31,7 @@ import Data.Binary( Binary( .. ) )
 import Data.Binary.Get( Get, getWord16be, getWord32be )
 import Data.Binary.Put( putWord16be, putWord32be )
 import qualified Data.Vector as V
-
+import Control.Lens
 
 import Graphics.Text.TrueType.Types
 
@@ -51,6 +64,7 @@ data HorizontalHeader = HorizontalHeader
     , _hheaLongHorMetricCount :: {-# UNPACK #-} !Word16
     }
     deriving (Eq, Show)
+makeLenses ''HorizontalHeader
 
 instance NFData HorizontalHeader where
     rnf (HorizontalHeader {}) = ()
